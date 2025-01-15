@@ -7,8 +7,11 @@ def plot_example():
     pass
 
 
-def set_figsize(figsize=(3.5, 2.5)):
-    """设置matplotlib的图表大小"""
+def set_figsize(figsize=None):
+    """动态设置matplotlib的图表大小"""
+    # 如果没有提供 figsize，读取默认值
+    if figsize is None:
+        figsize = (6, 4.5)  # 默认大小，可从配置文件读取
     plt.rcParams['figure.figsize'] = figsize
 
 
