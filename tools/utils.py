@@ -1,5 +1,6 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import time
+import numpy as np
 
 
 def plot_example():
@@ -59,3 +60,31 @@ def plot(X, Y=None, xlabel=None, ylabel=None, legend=None,
             axes.plot(y, fmt)
     set_axes(axes, xlabel, ylabel, xlim, ylim, xscale, yscale, legend)
     plt.show()
+
+
+class Timer:
+    # 记录多次运行时间
+    def __init__(self):
+        self.times = []
+        self.start()
+
+    # 启动计时器
+    def start(self):
+        self.tik = time.time()
+
+    # 停止计时器并将时间纪录在列表中
+    def stop(self):
+        self.times.append(time.time() - self.tik)
+        return self.times[-1]
+
+    # 返回平均时间
+    def avg(self):
+        return sum(self.times) / len(self.times)
+
+    # 返回时间总和
+    def sum(self):
+        return sum(self.times)
+
+    # 返回累计时间
+    def cumsum(self):
+        return np.array(self.times).cumsum().tolist()
