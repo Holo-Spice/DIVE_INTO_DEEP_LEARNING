@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import time
 import numpy as np
+import torch
 
 
 def plot_example():
@@ -88,3 +89,30 @@ class Timer:
     # 返回累计时间
     def cumsum(self):
         return np.array(self.times).cumsum().tolist()
+
+
+# 生成y = Xw + b + 噪声
+def synthetic_data(w, b, num_examples):
+    X = torch.normal(0, 1, (num_examples, len(w)))
+    y = torch.matmul(X, w) + b
+    y += torch.normal(0, 0.01, y.shape)
+    return X, y.reshape((-1, 1))
+
+# 定义定义模型
+def linreg(X,w,b):
+    """线性回归模型"""
+    return torch.matmul(X, w) + b
+
+# 定义损失函数
+def squared_loss(y_hat, y):
+    """均方损失"""
+    return (y_hat - y.reshape(y_hat.shape)) ** 2 / 2
+
+# 定义优化算法
+def sgd(params, lr, batch_size):
+    """小批量随机梯度下降"""
+    with torch.no_grad():
+        for param in params:
+            param -= lr * param.grad / batch_size
+            param.grad.zero_()
+
