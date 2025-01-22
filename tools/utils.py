@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import time
 import numpy as np
 import torch
+from torch.utils import data
 
 
 def plot_example():
@@ -98,15 +99,18 @@ def synthetic_data(w, b, num_examples):
     y += torch.normal(0, 0.01, y.shape)
     return X, y.reshape((-1, 1))
 
+
 # 定义定义模型
-def linreg(X,w,b):
+def linreg(X, w, b):
     """线性回归模型"""
     return torch.matmul(X, w) + b
+
 
 # 定义损失函数
 def squared_loss(y_hat, y):
     """均方损失"""
     return (y_hat - y.reshape(y_hat.shape)) ** 2 / 2
+
 
 # 定义优化算法
 def sgd(params, lr, batch_size):
@@ -116,3 +120,9 @@ def sgd(params, lr, batch_size):
             param -= lr * param.grad / batch_size
             param.grad.zero_()
 
+
+# 读取数据
+def load_arry(data_arrays, batch_size, is_train=True):
+    """构造一个PyTorch数据迭代器"""
+    dataset = data.TensorDataset(*data_arrays)
+    return data.DataLoader(dataset, batch_size, shuffle=is_train)
