@@ -2,7 +2,9 @@ import matplotlib.pyplot as plt
 import time
 import numpy as np
 import torch
+import torchvision.datasets
 from torch.utils import data
+from torchvision import transforms
 
 
 def plot_example():
@@ -136,7 +138,7 @@ def get_fashion_mnist_labels(labels):  #@save
 
 
 # 绘制图像列表
-def shown_images(imgs, num_rows, num_cols, titles=None,scale = 1.5):
+def shown_images(imgs, num_rows, num_cols, titles=None, scale=1.5):
     figsize = (num_cols * scale, num_rows * scale)
     _, axes = plt.subplots(num_rows, num_cols, figsize=figsize)
     axes = axes.flatten()
@@ -155,3 +157,30 @@ def shown_images(imgs, num_rows, num_cols, titles=None,scale = 1.5):
     plt.tight_layout()  # 自动调整子图间距
     plt.show()  # 显示图像
     return axes
+
+
+# 使用指定线程数读取数据,默认为4
+def get_dataloader_workers(num=4):
+    print(f'num_workers = {num}')
+    return num
+
+
+# 获取和读取Fashion-MNIST数据集 返回训练集和验证集的数据迭代器
+def load_data_fashion_mnist(batch_size, resize=None):
+    """下载Fashion-MNIST数据集，然后将其加载到内存中"""
+    trans = [transforms.ToTensor()]
+    if resize:
+        trans.insert(0, transforms.Resize(resize))
+    trans = transforms.Compose(trans)
+
+    mnist_train = torchvision.datasets.FashionMNIST(
+        root="../data", train=True, transform=trans, download=True
+    )
+    mnist_test = torchvision.datasets.FashionMNIST(
+        root="../data", train=False, transform=trans, download=True
+    )
+
+    return (data.DataLoader(mnist_train, batch_size=batch_size, shuffle=True,
+                            num_workers=get_dataloader_workers()),
+            data.DataLoader(mnist_test, batch_size=batch_size, shuffle=True,
+                            num_workers=get_dataloader_workers()))
