@@ -7,6 +7,49 @@ from torch.utils import data
 from torchvision import transforms
 
 
+class Timer:
+    # 记录多次运行时间
+    def __init__(self):
+        self.times = []
+        self.start()
+
+    # 启动计时器
+    def start(self):
+        self.tik = time.time()
+
+    # 停止计时器并将时间纪录在列表中
+    def stop(self):
+        self.times.append(time.time() - self.tik)
+        return self.times[-1]
+
+    # 返回平均时间
+    def avg(self):
+        return sum(self.times) / len(self.times)
+
+    # 返回时间总和
+    def sum(self):
+        return sum(self.times)
+
+    # 返回累计时间
+    def cumsum(self):
+        return np.array(self.times).cumsum().tolist()
+
+
+# 在n个变量上累加
+class Accumulator:
+    def __init__(self, n):
+        self.data = [0.0] * n
+
+    def add(self, *args):
+        self.data = [a + float(b) for a, b in zip(self.data, args)]
+
+    def reset(self):
+        self.data = [0.0] * len(self.data)
+
+    def __getitem__(self, idx):
+        return self.data[idx]
+
+
 def plot_example():
     """不需要在脚本中使用，因为普通脚本自动设置了渲染格式"""
     pass
@@ -66,34 +109,6 @@ def plot(X, Y=None, xlabel=None, ylabel=None, legend=None,
     plt.show()
 
 
-class Timer:
-    # 记录多次运行时间
-    def __init__(self):
-        self.times = []
-        self.start()
-
-    # 启动计时器
-    def start(self):
-        self.tik = time.time()
-
-    # 停止计时器并将时间纪录在列表中
-    def stop(self):
-        self.times.append(time.time() - self.tik)
-        return self.times[-1]
-
-    # 返回平均时间
-    def avg(self):
-        return sum(self.times) / len(self.times)
-
-    # 返回时间总和
-    def sum(self):
-        return sum(self.times)
-
-    # 返回累计时间
-    def cumsum(self):
-        return np.array(self.times).cumsum().tolist()
-
-
 # 生成y = Xw + b + 噪声
 def synthetic_data(w, b, num_examples):
     X = torch.normal(0, 1, (num_examples, len(w)))
@@ -130,7 +145,7 @@ def load_arry(data_arrays, batch_size, is_train=True):
     return data.DataLoader(dataset, batch_size, shuffle=is_train)
 
 
-def get_fashion_mnist_labels(labels):  #@save
+def get_fashion_mnist_labels(labels):
     """返回Fashion-MNIST数据集的文本标签"""
     text_labels = ['t-shirt', 'trouser', 'pullover', 'dress', 'coat',
                    'sandal', 'shirt', 'sneaker', 'bag', 'ankle boot']
@@ -184,3 +199,22 @@ def load_data_fashion_mnist(batch_size, resize=None):
                             num_workers=get_dataloader_workers()),
             data.DataLoader(mnist_test, batch_size=batch_size, shuffle=True,
                             num_workers=get_dataloader_workers()))
+
+
+# 计算预测正确的数量
+def accuracy(y_hat, y):
+    if len(y_hat.shape) > 1 and y_hat.shape[1] > 1:
+        y_hat = y_hat.argmax(axis=1)
+    cmp = y_hat.type(y.dtype) == y
+    return float(cmp.type(y.dtype).sum())
+
+
+# 计算在指定数据集上模型的精度
+def evaluate_accuracy(net, data_iter):
+    if isinstance(net, torch.nn.Module):
+        net.eval()  # 模型设置为评估模式
+    metric = Accumulator(2)  # 正确预测数，预测总数
+    with torch.no_grad():
+        for X, y in data_iter:
+            metric.add(accuracy(net(X), y), y.numel())
+    return metric[0] / metric[1]
