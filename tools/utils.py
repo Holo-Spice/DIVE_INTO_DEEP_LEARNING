@@ -5,6 +5,7 @@ import torch
 import torchvision.datasets
 from torch.utils import data
 from torchvision import transforms
+from IPython import display
 
 
 class Timer:
@@ -48,6 +49,48 @@ class Accumulator:
 
     def __getitem__(self, idx):
         return self.data[idx]
+
+
+# 在动画中绘制数据"
+class Animator:
+    def __init__(self, xlabel=None, ylabel=None, legend=None, xlim=None,
+                 ylim=None, xscale='linear', yscale='linear',
+                 fmts=('-', 'm--', 'g-.', 'r:'), nrows=1, ncols=1,
+                 figsize=(3.5, 2.5)):
+        # 用于增量地绘制多条线
+        if legend is None:
+            legend = []
+        # 使用 plt.subplots 代替 d2l.plt.subplots
+        self.fig, self.axes = plt.subplots(nrows, ncols, figsize=figsize)
+        # 如果只有一幅图，则保证 self.axes 为列表
+        if nrows * ncols == 1:
+            self.axes = [self.axes, ]
+        # 使用 lambda 捕获设置图表属性的参数
+        self.config_axes = lambda: set_axes(
+            self.axes[0], xlabel, ylabel, xlim, ylim, xscale, yscale, legend)
+        self.X, self.Y, self.fmts = None, None, fmts
+
+    def add(self, x, y):
+        # 向图表中添加多个数据点
+        if not hasattr(y, "__len__"):
+            y = [y]
+        n = len(y)
+        if not hasattr(x, "__len__"):
+            x = [x] * n
+        if not self.X:
+            self.X = [[] for _ in range(n)]
+        if not self.Y:
+            self.Y = [[] for _ in range(n)]
+        for i, (a, b) in enumerate(zip(x, y)):
+            if a is not None and b is not None:
+                self.X[i].append(a)
+                self.Y[i].append(b)
+        self.axes[0].cla()
+        for x_vals, y_vals, fmt in zip(self.X, self.Y, self.fmts):
+            self.axes[0].plot(x_vals, y_vals, fmt)
+        self.config_axes()
+        display.display(self.fig)
+        display.clear_output(wait=True)
 
 
 def plot_example():
@@ -218,3 +261,59 @@ def evaluate_accuracy(net, data_iter):
         for X, y in data_iter:
             metric.add(accuracy(net(X), y), y.numel())
     return metric[0] / metric[1]
+
+
+# 训练模型一个迭代周期
+def train_epoch_ch3(net, train_iter, loss, updater):
+    # 将模型设置为训练模式
+    if isinstance(net, torch.nn.Module):
+        net.train()
+    # 训练损失总和、训练准确度总和、样本数
+    metric = Accumulator(3)
+    for X, y in train_iter:
+        # 计算梯度并更新参数
+        y_hat = net(X)
+        l = loss(y_hat, y)
+        if isinstance(updater, torch.optim.Optimizer):
+            # 使用PyTorch内置的优化器和损失函数
+            updater.zero_grad()
+            l.mean().backward()
+            updater.step()
+        else:
+            # 使用定制的优化器和损失函数
+            l.sum().backward()
+            updater(X.shape[0])
+        metric.add(float(l.sum()), accuracy(y_hat, y), y.numel())
+    # 返回训练损失和训练精度
+    return metric[0] / metric[2], metric[1] / metric[2]
+
+
+# 训练模型
+def train_ch3(net, train_iter, test_iter, loss, num_epochs, updater):
+    animator = Animator(xlabel='epoch', xlim=[1, num_epochs], ylim=[0.3, 0.9],
+                        legend=['train loss', 'train acc', 'test acc'])
+    for epoch in range(num_epochs):
+        train_metrics = train_epoch_ch3(net, train_iter, loss, updater)
+        test_acc = evaluate_accuracy(net, test_iter)
+        animator.add(epoch + 1, train_metrics + (test_acc,))
+    train_loss, train_acc = train_metrics
+    plt.show()
+    assert train_loss < 0.5, train_loss
+    assert train_acc <= 1 and train_acc > 0.7, train_acc
+    assert test_acc <= 1 and test_acc > 0.7, test_acc
+
+
+# 预测标签
+def predict_ch3(net, test_iter, n=6):
+    for X, y in test_iter:
+        break
+    trues = get_fashion_mnist_labels(y)
+    preds = get_fashion_mnist_labels(net(X).argmax(axis=1))
+    titles = [true +'\n' + pred for true, pred in zip(trues, preds)]
+    shown_images(
+        X[0:n].reshape((n, 28, 28)),  # 取前n张图片
+        1,  # 1行
+        n,  # n列
+        titles=titles[0:n]  # 标题
+    )
+
