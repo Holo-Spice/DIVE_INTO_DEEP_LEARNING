@@ -309,11 +309,10 @@ def predict_ch3(net, test_iter, n=6):
         break
     trues = get_fashion_mnist_labels(y)
     preds = get_fashion_mnist_labels(net(X).argmax(axis=1))
-    titles = [true +'\n' + pred for true, pred in zip(trues, preds)]
+    titles = [true + '\n' + pred for true, pred in zip(trues, preds)]
     shown_images(
         X[0:n].reshape((n, 28, 28)),  # 取前n张图片
         1,  # 1行
         n,  # n列
         titles=titles[0:n]  # 标题
     )
-
