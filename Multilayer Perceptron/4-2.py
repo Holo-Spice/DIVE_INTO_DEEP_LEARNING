@@ -29,7 +29,7 @@ def net(X):
 
 
 def main():
-    batch_size = 512
+    batch_size = 256
     train_iter, test_iter = load_data_fashion_mnist(batch_size)
 
     params = [w1, b1, w2, b2]

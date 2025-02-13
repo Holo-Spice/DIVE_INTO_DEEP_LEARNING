@@ -51,27 +51,21 @@ class Accumulator:
         return self.data[idx]
 
 
-# 在动画中绘制数据"
 class Animator:
     def __init__(self, xlabel=None, ylabel=None, legend=None, xlim=None,
                  ylim=None, xscale='linear', yscale='linear',
                  fmts=('-', 'm--', 'g-.', 'r:'), nrows=1, ncols=1,
                  figsize=(3.5, 2.5)):
-        # 用于增量地绘制多条线
         if legend is None:
             legend = []
-        # 使用 plt.subplots 代替 d2l.plt.subplots
         self.fig, self.axes = plt.subplots(nrows, ncols, figsize=figsize)
-        # 如果只有一幅图，则保证 self.axes 为列表
         if nrows * ncols == 1:
             self.axes = [self.axes, ]
-        # 使用 lambda 捕获设置图表属性的参数
         self.config_axes = lambda: set_axes(
             self.axes[0], xlabel, ylabel, xlim, ylim, xscale, yscale, legend)
         self.X, self.Y, self.fmts = None, None, fmts
 
     def add(self, x, y):
-        # 向图表中添加多个数据点
         if not hasattr(y, "__len__"):
             y = [y]
         n = len(y)
@@ -85,12 +79,13 @@ class Animator:
             if a is not None and b is not None:
                 self.X[i].append(a)
                 self.Y[i].append(b)
+
+    def show(self):
         self.axes[0].cla()
         for x_vals, y_vals, fmt in zip(self.X, self.Y, self.fmts):
             self.axes[0].plot(x_vals, y_vals, fmt)
         self.config_axes()
-        display.display(self.fig)
-        display.clear_output(wait=True)
+        plt.show()
 
 
 def plot_example():
@@ -293,6 +288,7 @@ def train_ch3(net, train_iter, test_iter, loss, num_epochs, updater):
     animator = Animator(xlabel='epoch', xlim=[1, num_epochs], ylim=[0.3, 0.9],
                         legend=['train loss', 'train acc', 'test acc'])
     for epoch in range(num_epochs):
+        print(f'epoch {epoch + 1} / {num_epochs}')
         train_metrics = train_epoch_ch3(net, train_iter, loss, updater)
         test_acc = evaluate_accuracy(net, test_iter)
         animator.add(epoch + 1, train_metrics + (test_acc,))
@@ -316,3 +312,36 @@ def predict_ch3(net, test_iter, n=6):
         n,  # n列
         titles=titles[0:n]  # 标题
     )
+
+
+# 评估给定数据集上模型的损失
+def evaluate_loss(net, data_iter, loss):
+    metric = Accumulator(2)  # 损失的总和，样本数量
+    for X, y in data_iter:
+        # 将输入 X 送入模型，得到预测输出 out
+        out = net(X)
+        # 将真实标签 y 的形状调整为与 out 相同，确保后续损失计算无误
+        y = y.reshape(out.shape)
+        # 计算当前批次的损失
+        l = loss(out, y)
+        # 累加当前批次的总损失（l.sum）和样本数量（l.numel()）
+        metric.add(l.sum(), l.numel())
+    # 返回平均损失
+    return metric[0] / metric[1]
+
+
+def load_array(data_arrays, batch_size, is_train=True):
+    """构造一个PyTorch数据迭代器
+
+    Defined in :numref:`sec_linear_concise`
+    """
+    # 利用提供的数组构造一个TensorDataset
+    # data_arrays 是一个包含多个Tensor的序列，这些Tensor的第一维度长度必须相同，
+    # 每个样本的数据由这些Tensor中对应位置的数据组成
+    dataset = data.TensorDataset(*data_arrays)
+
+    # 构造并返回一个DataLoader
+    # - dataset: 上面构造的TensorDataset
+    # - batch_size: 每个小批量的样本数
+    # - shuffle=is_train: 如果 is_train 为 True，则在每个epoch开始时将数据打乱
+    return data.DataLoader(dataset, batch_size, shuffle=is_train)
