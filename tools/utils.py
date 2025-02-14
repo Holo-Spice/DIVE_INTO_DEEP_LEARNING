@@ -345,3 +345,25 @@ def load_array(data_arrays, batch_size, is_train=True):
     # - batch_size: 每个小批量的样本数
     # - shuffle=is_train: 如果 is_train 为 True，则在每个epoch开始时将数据打乱
     return data.DataLoader(dataset, batch_size, shuffle=is_train)
+
+
+# 重塑数据形状
+def reshape(x, *args, **kwargs):
+    # 调用 x 自带的 reshape 方法，
+    # *args 用于指定新的形状，
+    # **kwargs 用于传递其他参数（如 order 参数等）
+    return x.reshape(*args, **kwargs)
+
+
+def linreg(X, w, b):
+    """线性回归模型
+
+    Defined in :numref:`sec_linear_scratch`"""
+    return torch.matmul(X, w) + b
+
+
+def squared_loss(y_hat, y):
+    """均方损失
+
+    Defined in :numref:`sec_linear_scratch`"""
+    return (y_hat - reshape(y, y_hat.shape)) ** 2 / 2
