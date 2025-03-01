@@ -39,7 +39,7 @@ class FixedHiddenMLP(nn.Module):
 class NestMLP(nn.Module):
     def __init__(self):
         super().__init__()
-        self.net = nn.Sequential(nn.Linear(20,64), nn.ReLU(),
+        nn.Sequential(nn.Linear(20,64), nn.ReLU(),
                                  nn.Linear(64,32), nn.ReLU())
         self.linear = nn.Linear(32,16)
 
