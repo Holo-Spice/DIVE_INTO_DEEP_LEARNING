@@ -427,3 +427,20 @@ def download_all():
     """下载DATA_HUB中的所有文件"""
     for name in DATA_HUB:
         download(name)
+
+
+# 尝试返回第 i 个GPU
+def try_gpu(i=0):
+    """如果存在，则返回gpu(i)，否则返回cpu()"""
+    if torch.cuda.device_count() >= i + 1:
+        return torch.device(f'cuda:{i}')
+    else:
+        return torch.device('cpu')
+
+
+# 返回所有可用的GPU设备
+def try_all_gpus():
+    """返回所有可用的GPU，如果没有GPU，则返回[cpu(),]"""
+    devices = [torch.device(f'cuda:{i}') for i in range(torch.cuda.device_count())]
+    return devices if len(devices) > 0 else [torch.device('cpu')]
+
