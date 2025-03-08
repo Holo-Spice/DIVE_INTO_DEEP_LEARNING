@@ -11,6 +11,8 @@ import os
 import tarfile
 import zipfile
 import requests
+from torch import nn
+
 
 #@save
 DATA_HUB = dict()
@@ -453,3 +455,102 @@ def corr2d(X, K):
         for j in range(Y.shape[1]):
             Y[i, j] = (X[i:i + h, j:j + w] * K).sum()
     return Y
+
+
+# 使用GPU计算模型在数据集上的精度
+def evaulate_accuracy_gpu(net, data_iter, device=None):
+    # 检查是否为pytorch模型
+    if isinstance(net, nn.Module):
+        # 评估模式
+        net.eval()
+        if not device:
+            device = next(iter(net.parameters())).device
+    # 正确预测的数量，总预测的数量
+    metric = Accumulator(2)
+    with torch.no_grad():
+        for X, y in data_iter:
+            if isinstance(X, list):
+                # BERT微调所需的
+                X = [x.to(device) for x in X]
+            else:
+                X = X.to(device)
+            y = y.to(device)
+            metric.add(accuracy(net(X), y), y.numel())
+    return metric[0] / metric[1]
+
+
+# 用GPU训练模型
+def train_ch6(net, train_iter, test_iter, num_epochs, lr, device):
+    def init_weights(m):
+        if type(m) == nn.Linear or type(m) == nn.Conv2d:
+            #  Xavier 均匀分布初始化
+            nn.init.xavier_uniform_(m.weight)
+    net.apply(init_weights)
+    print(f'training no: {device}')
+    net.to(device)
+    # 随机梯度下降优化器
+    optimizer = torch.optim.SGD(net.parameters(), lr)
+    loss = nn.CrossEntropyLoss()
+    animator = Animator(xlabel='epoch', xlim=[1, num_epochs], legend=['train loss', 'train acc', 'test acc'])
+    timer, num_batches = Timer(), len(train_iter)
+    for epoch in range(num_epochs):
+        # 训练损失之和，训练准确率之和，样本数
+        metric = Accumulator(3)
+        net.train()
+        for i, (X, y) in enumerate(train_iter):
+            timer.start()
+            # 梯度清零
+            optimizer.zero_grad()
+            X, y = X.to(device), y.to(device)
+            # 前向传播
+            y_hat = net(X)
+            # 计算损失
+            l = loss(y_hat, y)
+            # 反向传播
+            l.backward()
+            # 更新参数
+            optimizer.step()
+            with torch.no_grad():
+                metric.add(l * X.shape[0], accuracy(y_hat, y), X.shape[0])
+            timer.stop()
+            train_l = metric[0] / metric[2]
+            train_acc = metric[1] / metric[2]
+            if (i + 1) % max(1, (num_batches // 10)) == 0:
+                print(f"Epoch {epoch + 1}/{num_epochs}, Batch {i + 1}/{num_batches}, "
+                      f"Current train loss: {train_l:.3f}, train acc: {train_acc:.3f}, device:{X.device}")
+            if (i + 1) % (num_epochs // 5) == 0 or i == num_batches - 1:
+                animator.add(epoch + (i + 1) / num_batches,
+                             (train_l, train_acc, None))
+        test_acc = evaulate_accuracy_gpu(net, test_iter)
+        animator.add(epoch + 1, (None, None, test_acc))
+    print(f'loss {train_l:.3f}, train acc {train_acc:.3f}, '
+          f'test acc {test_acc:.3f}')
+    print(f'{metric[2] * num_epochs / timer.sum():.1f} examples/sec '
+          f'on {str(device)}')
+    animator.show()
+
+
+def predict_ch6(net, test_iter, n=6):
+    net.eval()
+    device = next(net.parameters()).device
+    for X, y in test_iter:
+        X, y = X.to(device), y.to(device)
+        break
+
+    with torch.no_grad():
+        # 前向传播
+        y_hat = net(X)
+        preds = get_fashion_mnist_labels(y_hat.argmax(axis=1))
+
+    trues = get_fashion_mnist_labels(y.cpu())
+    titles = [true + '\n' + pred for true, pred in zip(trues, preds)]
+
+    shown_images(
+        X[:n].cpu().reshape(-1, 28, 28),  # 保持[B, H, W]格式
+        1, n,
+        titles=titles[:n]
+    )
+
+
+
+
