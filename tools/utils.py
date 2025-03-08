@@ -208,6 +208,13 @@ def get_fashion_mnist_labels(labels):
     return [text_labels[int(i)] for i in labels]
 
 
+def get_mnist_labels(labels):
+    """返回MNIST数据集的文本标签"""
+    text_labels = ['0', '1', '2', '3', '4',
+                   '5', '6', '7', '8', '9']
+    return [text_labels[int(i)] for i in labels]
+
+
 # 绘制图像列表
 def shown_images(imgs, num_rows, num_cols, titles=None, scale=1.5):
     figsize = (num_cols * scale, num_rows * scale)
@@ -540,9 +547,9 @@ def predict_ch6(net, test_iter, n=6):
     with torch.no_grad():
         # 前向传播
         y_hat = net(X)
-        preds = get_fashion_mnist_labels(y_hat.argmax(axis=1))
+        preds = get_mnist_labels(y_hat.argmax(axis=1))
 
-    trues = get_fashion_mnist_labels(y.cpu())
+    trues = get_mnist_labels(y.cpu())
     titles = [true + '\n' + pred for true, pred in zip(trues, preds)]
 
     shown_images(
@@ -552,5 +559,26 @@ def predict_ch6(net, test_iter, n=6):
     )
 
 
+# 获取和读取MNIST数据集，返回训练集和验证集的数据迭代器
+def load_data_mnist(batch_size, resize=None):
+    """下载MNIST数据集，然后将其加载到内存中"""
+    trans = [transforms.ToTensor()]
+    if resize:
+        trans.insert(0, transforms.Resize(resize))
+    trans = transforms.Compose(trans)
+
+    # 加载MNIST训练集和测试集
+    mnist_train = torchvision.datasets.MNIST(
+        root="../data", train=True, transform=trans, download=True
+    )
+    mnist_test = torchvision.datasets.MNIST(
+        root="../data", train=False, transform=trans, download=True
+    )
+
+    # 返回数据加载器
+    return (data.DataLoader(mnist_train, batch_size=batch_size, shuffle=True,
+                            num_workers=4),
+            data.DataLoader(mnist_test, batch_size=batch_size, shuffle=False,
+                            num_workers=4))
 
 
