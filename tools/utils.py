@@ -325,7 +325,7 @@ def train_ch3(net, train_iter, test_iter, loss, num_epochs, updater):
 
 
 # 预测标签
-def predict_ch3(net, test_iter, n=6):
+def predict_ch3(net, test_iter, n=10):
     for X, y in test_iter:
         break
     trues = get_fashion_mnist_labels(y)
@@ -537,7 +537,7 @@ def train_ch6(net, train_iter, test_iter, num_epochs, lr, device):
     animator.show()
 
 
-def predict_ch6(net, test_iter, n=6):
+def predict_ch6(net, test_iter, n=10):
     net.eval()
     device = next(net.parameters()).device
     for X, y in test_iter:
@@ -547,13 +547,13 @@ def predict_ch6(net, test_iter, n=6):
     with torch.no_grad():
         # 前向传播
         y_hat = net(X)
-        preds = get_mnist_labels(y_hat.argmax(axis=1))
+        preds = get_fashion_mnist_labels(y_hat.argmax(axis=1))
 
-    trues = get_mnist_labels(y.cpu())
+    trues = get_fashion_mnist_labels(y.cpu())
     titles = [true + '\n' + pred for true, pred in zip(trues, preds)]
 
     shown_images(
-        X[:n].cpu().reshape(-1, 28, 28),  # 保持[B, H, W]格式
+        X[:n].cpu().reshape(-1, 224, 224),  # 保持[B, H, W]格式
         1, n,
         titles=titles[:n]
     )
