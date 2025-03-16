@@ -12,7 +12,7 @@ def comp_conv2d(conv2d, X):
     return Y.reshape(Y.shape[2:])
 
 
-print(f'[(N_h - K_h + P_h + S_h) / S_h] * [(N_w - K_w + P_w + S_w) / S_w]')
+print(f'[(N_h - K_h + P_h(总) + S_h) / S_h] * [(N_w - K_w + P_w + S_w) / S_w]')
 # 边都填充了1行或1列，因此总共添加了2行或2列 8 + 2 - 3 + 1 = 8
 conv2d = nn.Conv2d(1, 1, kernel_size=3, padding=1)
 X = torch.rand(size=(8, 8))

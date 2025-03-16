@@ -496,7 +496,7 @@ def train_ch6(net, train_iter, test_iter, num_epochs, lr, device):
     print(f'training no: {device}')
     net.to(device)
     # 随机梯度下降优化器
-    optimizer = torch.optim.SGD(net.parameters(), lr)
+    optimizer = torch.optim.Adam(net.parameters(), lr)
     loss = nn.CrossEntropyLoss()
     animator = Animator(xlabel='epoch', xlim=[1, num_epochs], legend=['train loss', 'train acc', 'test acc'])
     timer, num_batches = Timer(), len(train_iter)

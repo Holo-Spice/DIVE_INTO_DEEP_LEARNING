@@ -56,7 +56,7 @@ def main():
 
             roi = gray[y:y + adjusted_size, x:x + adjusted_size]
             cv2.imshow('frame', roi)
-            processed = cv2.threshold(cv2.resize(roi, (28, 28)), 100, 255, cv2.THRESH_BINARY_INV)[1]
+            processed = cv2.threshold(cv2.resize(roi, (28, 28)), 100, 255, cv2.THRESH_BINARY)[1]
 
             try:
                 pred = predict(net, processed)
