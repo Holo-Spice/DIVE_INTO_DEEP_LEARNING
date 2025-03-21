@@ -537,7 +537,7 @@ def train_ch6(net, train_iter, test_iter, num_epochs, lr, device):
     animator.show()
 
 
-def predict_ch6(net, test_iter, n=10):
+def predict_ch6(net, test_iter, image_size=(224, 224), n=10):
     net.eval()
     device = next(net.parameters()).device
     for X, y in test_iter:
@@ -552,11 +552,13 @@ def predict_ch6(net, test_iter, n=10):
     trues = get_fashion_mnist_labels(y.cpu())
     titles = [true + '\n' + pred for true, pred in zip(trues, preds)]
 
+    # 根据传入的 image_size 参数调整图像大小
     shown_images(
-        X[:n].cpu().reshape(-1, 224, 224),  # 保持[B, H, W]格式
+        X[:n].cpu().reshape(-1, *image_size),  # 保持[B, H, W]格式，使用 image_size 调整形状
         1, n,
         titles=titles[:n]
     )
+
 
 
 # 获取和读取MNIST数据集，返回训练集和验证集的数据迭代器
