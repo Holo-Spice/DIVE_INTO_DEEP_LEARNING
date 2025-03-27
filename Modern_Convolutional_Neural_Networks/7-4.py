@@ -32,6 +32,8 @@ class Inception(nn.Module):
 
 
 def main():
+    timer = d2l.Timer()
+
     b1 = nn.Sequential(
         nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3),
         nn.ReLU(),
@@ -73,6 +75,13 @@ def main():
     lr, num_epochs, batch_size = 0.0005, 15, 128
     train_iter, test_iter = d2l.load_data_fashion_mnist(batch_size, resize=96)
     d2l.train_ch6(net, train_iter, test_iter, num_epochs, lr, device)
+
+    # Stop the timer after training finishes
+    total_time = timer.stop()
+    # Use the format_time method to format the total time
+    formatted_time = timer.format_time(total_time)
+    print(f'Total training time: {formatted_time}')
+
     d2l.predict_ch6(net, test_iter, (96, 96))
 
 

@@ -53,6 +53,13 @@ class Timer:
     def cumsum(self):
         return np.array(self.times).cumsum().tolist()
 
+    # 格式化时间为小时:分钟:秒
+    def format_time(self, seconds):
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        seconds = seconds % 60
+        return f'{int(hours)}小时 {int(minutes)}分钟 {int(seconds)}秒'
+
 
 # 在n个变量上累加
 class Accumulator:
