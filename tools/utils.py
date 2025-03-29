@@ -503,7 +503,7 @@ def train_ch6(net, train_iter, test_iter, num_epochs, lr, device):
     print(f'training no: {device}')
     net.to(device)
     # 随机梯度下降优化器
-    optimizer = torch.optim.Adam(net.parameters(), lr)
+    optimizer = torch.optim.SGD(net.parameters(), lr)
     loss = nn.CrossEntropyLoss()
     animator = Animator(xlabel='epoch', xlim=[1, num_epochs], legend=['train loss', 'train acc', 'test acc'])
     timer, num_batches = Timer(), len(train_iter)
@@ -554,9 +554,9 @@ def predict_ch6(net, test_iter, image_size=(224, 224), n=10):
     with torch.no_grad():
         # 前向传播
         y_hat = net(X)
-        preds = get_fashion_mnist_labels(y_hat.argmax(axis=1))
+        preds = get_mnist_labels(y_hat.argmax(axis=1))
 
-    trues = get_fashion_mnist_labels(y.cpu())
+    trues = get_mnist_labels(y.cpu())
     titles = [true + '\n' + pred for true, pred in zip(trues, preds)]
 
     # 根据传入的 image_size 参数调整图像大小

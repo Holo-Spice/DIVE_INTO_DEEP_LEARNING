@@ -60,7 +60,7 @@ def main():
     train_iter, test_iter = d2l.load_data_mnist(batch_size)
     d2l.train_ch6(net, train_iter, test_iter, num_epochs, lr, d2l.try_gpu())
 
-    d2l.predict_ch6(net, test_iter)
+    d2l.predict_ch6(net, test_iter, (28, 28))
 
 if __name__ == '__main__':
     main()

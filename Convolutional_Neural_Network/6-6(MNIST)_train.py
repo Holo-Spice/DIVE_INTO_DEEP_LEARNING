@@ -20,11 +20,11 @@ def main():
         print(layer.__class__.__name__, 'output shape: \t', X.shape)
 
     batch_size = 256
-    lr, num_epochs = 0.05, 5
+    lr, num_epochs = 0.05, 10
     train_iter, test_iter = d2l.load_data_mnist(batch_size)
     d2l.train_ch6(net, train_iter, test_iter, num_epochs, lr, d2l.try_gpu())
 
-    d2l.predict_ch6(net, test_iter)
+    d2l.predict_ch6(net, test_iter, (28, 28))
     torch.save(net.state_dict(), 'mnist_cnn.pth')
 
 if __name__ == '__main__':
