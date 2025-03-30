@@ -1,17 +1,21 @@
-import matplotlib.pyplot as plt
-import time
-import numpy as np
-import torch
-import torchvision.datasets
-from torch.utils import data
-from torchvision import transforms
-from IPython import display
-import hashlib
+# Standard Library Imports
 import os
+import time
+import hashlib
 import tarfile
 import zipfile
+# Third-Party Libraries
+import numpy as np
+import matplotlib.pyplot as plt
 import requests
+from IPython import display
+# PyTorch and Related Libraries
+import torch
 from torch import nn
+from torch.nn import functional as F
+from torch.utils import data
+import torchvision.datasets
+from torchvision import transforms
 
 
 #@save
@@ -24,6 +28,28 @@ DATA_HUB['kaggle_house_train'] = (
 DATA_HUB['kaggle_house_test'] = (
     DATA_URL + 'kaggle_house_pred_test.csv',
     'fa19780a7b011d9b009e8bff8e99922a8ee2eb90')
+
+
+# 实现残差块
+class Residual(nn.Module):
+    def __init__(self, input_channels, num_channels, use_1x1conv=False, strides=1):
+        super().__init__()
+        self.conv1 = nn.Conv2d(input_channels, num_channels, kernel_size=3, padding=1, stride=strides)
+        self.conv2 = nn.Conv2d(num_channels, num_channels, kernel_size=3, padding=1)
+        if use_1x1conv:
+            self.conv3 = nn.Conv2d(input_channels, num_channels, kernel_size=1, stride=strides)
+        else:
+            self.conv3 = None
+        self.bn1 = nn.BatchNorm2d(num_channels)
+        self.bn2 = nn.BatchNorm2d(num_channels)
+
+    def forward(self, X):
+        Y = F.relu(self.bn1(self.conv1(X)))
+        Y = self.bn2(self.conv2(Y))
+        if self.conv3:
+            X = self.conv3(X)
+        Y += X
+        return F.relu(Y)
 
 
 class Timer:
@@ -554,9 +580,9 @@ def predict_ch6(net, test_iter, image_size=(224, 224), n=10):
     with torch.no_grad():
         # 前向传播
         y_hat = net(X)
-        preds = get_mnist_labels(y_hat.argmax(axis=1))
+        preds = get_fashion_mnist_labels(y_hat.argmax(axis=1))
 
-    trues = get_mnist_labels(y.cpu())
+    trues = get_fashion_mnist_labels(y.cpu())
     titles = [true + '\n' + pred for true, pred in zip(trues, preds)]
 
     # 根据传入的 image_size 参数调整图像大小
@@ -589,5 +615,6 @@ def load_data_mnist(batch_size, resize=None):
                             num_workers=4),
             data.DataLoader(mnist_test, batch_size=batch_size, shuffle=False,
                             num_workers=4))
+
 
 

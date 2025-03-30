@@ -88,6 +88,9 @@ net = nn.Sequential(
 
 
 lr, num_epochs, batch_size = 0.2, 15, 256
+
+
+
 train_iter, test_iter = d2l.load_data_fashion_mnist(batch_size)
 d2l.train_ch6(net, train_iter, test_iter, num_epochs, lr, device)
 # Stop the timer after training finishes
