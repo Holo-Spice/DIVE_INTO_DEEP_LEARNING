@@ -84,7 +84,7 @@ class Timer:
         hours = seconds // 3600
         minutes = (seconds % 3600) // 60
         seconds = seconds % 60
-        return f'{int(hours)}小时 {int(minutes)}分钟 {int(seconds)}秒'
+        return f'{int(hours)}h {int(minutes)}min {int(seconds)}s'
 
 
 # 在n个变量上累加
@@ -529,7 +529,7 @@ def train_ch6(net, train_iter, test_iter, num_epochs, lr, device):
     print(f'training no: {device}')
     net.to(device)
     # 随机梯度下降优化器
-    optimizer = torch.optim.SGD(net.parameters(), lr)
+    optimizer = torch.optim.Adam(net.parameters(), lr)
     loss = nn.CrossEntropyLoss()
     animator = Animator(xlabel='epoch', xlim=[1, num_epochs], legend=['train loss', 'train acc', 'test acc'])
     timer, num_batches = Timer(), len(train_iter)
