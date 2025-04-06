@@ -1,12 +1,9 @@
-from xml.sax.handler import all_features
-
 import numpy as np
 import pandas as pd
 import torch
-from sympy.logic.inference import valid
-
 import tools.utils as dl2
 from torch import nn
+
 
 train_date = pd.read_csv(dl2.download('kaggle_house_train'))
 test_date = pd.read_csv(dl2.download('kaggle_house_test'))

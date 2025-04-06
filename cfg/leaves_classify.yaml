@@ -1,0 +1,20 @@
+# config.yaml
+
+# 图片目录
+image_path: "../data/leaves_classify"
+
+# 训练和测试的 CSV 路径
+train_csv: "../data/leaves_classify/train.csv"
+test_csv: "../data/leaves_classify/test.csv"
+
+# DataLoader 参数
+batch_size: 64
+
+# 验证集比例
+valid_ratio: 0.2
+
+# 训练参数
+device : cuda:0
+lr     : 0.001
+num_epochs : 40
+
