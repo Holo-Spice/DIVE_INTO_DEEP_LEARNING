@@ -32,7 +32,7 @@ DATA_HUB['kaggle_house_test'] = (
 
 # 实现残差块
 class Residual(nn.Module):
-    def __init__(self, input_channels, num_channels, use_1x1conv=False, strides=1):
+    def __init__(self, input_channels, num_channels, use_1x1conv=False, strides=1, dropout_rate=0.5):
         super().__init__()
         self.conv1 = nn.Conv2d(input_channels, num_channels, kernel_size=3, padding=1, stride=strides)
         self.conv2 = nn.Conv2d(num_channels, num_channels, kernel_size=3, padding=1)
@@ -42,9 +42,11 @@ class Residual(nn.Module):
             self.conv3 = None
         self.bn1 = nn.BatchNorm2d(num_channels)
         self.bn2 = nn.BatchNorm2d(num_channels)
+        self.dropout = nn.Dropout(dropout_rate)
 
     def forward(self, X):
         Y = F.relu(self.bn1(self.conv1(X)))
+        Y = self.dropout(Y)
         Y = self.bn2(self.conv2(Y))
         if self.conv3:
             X = self.conv3(X)
