@@ -618,5 +618,128 @@ def load_data_mnist(batch_size, resize=None):
             data.DataLoader(mnist_test, batch_size=batch_size, shuffle=False,
                             num_workers=4))
 
+def evaluate_accuracy_gpu(net, data_iter, device=None):
+    """使用GPU计算模型在数据集上的精度
+
+    Defined in :numref:`sec_lenet`"""
+    if isinstance(net, nn.Module):
+        net.eval()  # 设置为评估模式
+        if not device:
+            device = next(iter(net.parameters())).device
+    # 正确预测的数量，总预测的数量
+    metric = Accumulator(2)
+    with torch.no_grad():
+        for X, y in data_iter:
+            if isinstance(X, list):
+                # BERT微调所需的（之后将介绍）
+                X = [x.to(device) for x in X]
+            else:
+                X = X.to(device)
+            y = y.to(device)
+            metric.add(accuracy(net(X), y), size(y))
+    return metric[0] / metric[1]
 
 
+
+def train_batch_ch13(net, X, y, loss, trainer, devices):
+    """用多GPU进行小批量训练"""
+    if isinstance(X, list):
+        # 微调BERT中所需
+        X = [x.to(devices[0]) for x in X]
+    else:
+        X = X.to(devices[0])
+    y = y.to(devices[0])
+    net.train()
+    trainer.zero_grad()
+    pred = net(X)
+    l = loss(pred, y)
+    l.sum().backward()
+    trainer.step()
+    train_loss_sum = l.sum()
+    train_acc_sum = accuracy(pred, y)
+    return train_loss_sum, train_acc_sum
+
+
+def train_ch13(net, train_iter, test_iter, loss, trainer, num_epochs,
+               devices=try_all_gpus()):
+    """用多GPU进行模型训练（带打印）"""
+    # 1. 打印一下用到哪些设备
+    print(f'training on devices: {devices}')
+
+    timer, num_batches = Timer(), len(train_iter)
+    animator = Animator(xlabel='epoch', xlim=[1, num_epochs], ylim=[0, 1],
+                        legend=['train loss', 'train acc', 'test acc'])
+    net = nn.DataParallel(net, device_ids=devices).to(devices[0])
+
+    for epoch in range(num_epochs):
+        # metric: [sum_loss, sum_acc, num_samples, num_features]
+        metric = Accumulator(4)
+        net.train()
+
+        for i, (features, labels) in enumerate(train_iter):
+            timer.start()
+            # 训练一个 batch
+            l, acc = train_batch_ch13(
+                net, features, labels, loss, trainer, devices)
+            metric.add(l, acc, labels.shape[0], labels.numel())
+            timer.stop()
+
+            # 每 1/5 个 epoch 或最后一个 batch 打印
+            if (i + 1) % max(1, num_batches // 5) == 0 or i == num_batches - 1:
+                cur_loss = metric[0] / metric[2]
+                cur_acc = metric[1] / metric[3]
+                print(f"Epoch {epoch + 1}/{num_epochs}, "
+                      f"Batch {i + 1}/{num_batches}, "
+                      f"train loss {cur_loss:.3f}, train acc {cur_acc:.3f}")
+                # 更新动画
+                animator.add(epoch + (i + 1) / num_batches,
+                             (cur_loss, cur_acc, None))
+
+        # 每个 epoch 结束后在测试集上评估
+        test_acc = evaluate_accuracy_gpu(net, test_iter)
+        print(f"Epoch {epoch + 1} done. Test acc {test_acc:.3f}\n")
+        animator.add(epoch + 1, (None, None, test_acc))
+
+    # 最终结果
+    final_loss = metric[0] / metric[2]
+    final_acc = metric[1] / metric[3]
+    print(f'Final loss {final_loss:.3f}, '
+          f'train acc {final_acc:.3f}, '
+          f'test acc {test_acc:.3f}')
+    print(f'{metric[2] * num_epochs / timer.sum():.1f} '
+          f'examples/sec on {devices}')
+
+    animator.show()
+
+
+def resnet18(num_classes, in_channels=1):
+    """稍加修改的ResNet-18模型"""
+
+    def resnet_block(in_channels, out_channels, num_residuals,
+                     first_block=False):
+        blk = []
+        for i in range(num_residuals):
+            if i == 0 and not first_block:
+                blk.append(Residual(in_channels, out_channels,
+                                        use_1x1conv=True, strides=2))
+            else:
+                blk.append(Residual(out_channels, out_channels))
+        return nn.Sequential(*blk)
+
+    # 该模型使用了更小的卷积核、步长和填充，而且删除了最大汇聚层
+    net = nn.Sequential(
+        nn.Conv2d(in_channels, 64, kernel_size=3, stride=1, padding=1),
+        nn.BatchNorm2d(64),
+        nn.ReLU())
+    net.add_module("resnet_block1", resnet_block(
+        64, 64, 2, first_block=True))
+    net.add_module("resnet_block2", resnet_block(64, 128, 2))
+    net.add_module("resnet_block3", resnet_block(128, 256, 2))
+    net.add_module("resnet_block4", resnet_block(256, 512, 2))
+    net.add_module("global_avg_pool", nn.AdaptiveAvgPool2d((1, 1)))
+    net.add_module("fc", nn.Sequential(nn.Flatten(),
+                                       nn.Linear(512, num_classes)))
+    return net
+
+
+size = lambda x, *args, **kwargs: x.numel(*args, **kwargs)

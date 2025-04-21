@@ -16,5 +16,5 @@ valid_ratio: 0.2
 # 训练参数
 device : cuda:0
 lr     : 0.001
-num_epochs : 40
+num_epochs : 50
 
