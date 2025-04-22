@@ -29,6 +29,10 @@ DATA_HUB['kaggle_house_test'] = (
     DATA_URL + 'kaggle_house_pred_test.csv',
     'fa19780a7b011d9b009e8bff8e99922a8ee2eb90')
 
+DATA_HUB['hotdog'] = (
+    DATA_URL + 'hotdog.zip',
+    'fba480ffa8aa7e0febbb511d181409f899b9baa5')
+
 
 # 实现残差块
 class Residual(nn.Module):
