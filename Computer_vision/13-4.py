@@ -4,6 +4,7 @@ import tools.utils as d2l
 torch.set_printoptions(2) # 精简输出精度
 
 def main():
+    """锚框"""
     img = d2l.plt.imread("./1.jpg")
     h, w = img.shape[:2]
     print(h, w)
@@ -21,6 +22,23 @@ def main():
                 ['s=0.75, r=1', 's=0.5, r=1', 's=0.25, r=1', 's=0.75, r=2',
                  's=0.75, r=0.5','s=0.75, r=0.1'])
     d2l.plt.show()
+
+    """交并比"""
+    ground_truth = torch.tensor([[0, 0.1, 0.08, 0.52, 0.92],
+                                 [1, 0.55, 0.2, 0.9, 0.88]])
+    anchors = torch.tensor([[0, 0.1, 0.2, 0.3], [0.15, 0.2, 0.4, 0.4],
+                            [0.63, 0.05, 0.88, 0.98], [0.66, 0.45, 0.8, 0.8],
+                            [0.57, 0.3, 0.92, 0.9]])
+
+    fig = d2l.plt.imshow(img)
+    d2l.show_bboxes(fig.axes, ground_truth[:, 1:] * bbox_scale, ['dog', 'cat'], 'k')
+    d2l.show_bboxes(fig.axes, anchors * bbox_scale, ['0', '1', '2', '3', '4']);
+    d2l.plt.show()
+
+    labels = d2l.multibox_target(anchors.unsqueeze(dim=0),
+                             ground_truth.unsqueeze(dim=0))
+
+    print(labels)
 
 
 if __name__ == '__main__':
